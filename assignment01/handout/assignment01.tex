@@ -194,15 +194,21 @@ Session 1 讲座里提过“N 方过百万”这个例子。总计算量 $10^{12
 执行层次 & 软件含义 & 对应硬件 & 直接可用的存储 & 同步与通信手段 \\
 \midrule
 thread & kernel 的最小执行单位 & 计算单元上的一个 lane & 自己的寄存器 & （自身天然有序） \\
-warp &  &  &  &  \\
-block / CTA &  &  &  &  \\
-grid &  &  &  &  \\
+warp & 32 个 thread 组成的 SIMT 执行组 & SM 内的一组执行 lane & 各 thread 的寄存器 & shuffle、vote、\texttt{\_\_syncwarp} 等 warp 原语 \\
+block / CTA & 可协作的一组 thread，也是分配到 SM 的单位 & 整个 block 驻留在同一个 SM & shared memory 与各 thread 的寄存器 & shared memory、\texttt{\_\_syncthreads}、原子操作 \\
+grid & 一次 kernel launch 的全部 block & 整块 GPU 上的多个 SM & global memory & global memory、原子操作；通常以 kernel 边界完成全 grid 同步 \\
 \bottomrule
 \end{tabular}
 \end{center}
 
 \prob{1.4}{CONCEPT}
 SIMD 与 SIMT 的区别？另：判断正误——Nvidia GPU 在 Volta 之后每个线程有独立的 program counter，所以 branch divergence 不再有性能代价。
+
+\par\textbf{回答：}
+
+SIMD 是一条向量指令同时作用于多个数据元素，程序通常显式使用向量类型、向量宽度或掩码。SIMT 则让程序员编写看似独立的标量线程，每个线程有自己的寄存器和线程编号，但硬件会把多个线程组成 warp，共同发射指令。
+
+判断为错。Volta 之后的 Independent Thread Scheduling 允许线程拥有更独立的执行状态和 program counter，但硬件仍以 warp 为主要执行与发射单位。发生 branch divergence 时，不同分支路径通常仍需分别执行，未参与当前路径的 lane 会闲置，因此仍有性能损失。
 
 \prob{1.5}{EXPERIMENT}[cuda/m1\_why\_gpu/01\_scaling.cu]
 同一个向量加法，四种配置各跑一遍。
