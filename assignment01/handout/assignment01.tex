@@ -1,10 +1,6 @@
 % 作业 1：GPU 与 GPU 编程
 % 编译：xelatex -interaction=nonstopmode assignment01.tex（跑两遍）
-\documentclass[11pt,a4paper,fontset=none]{ctexart}
-
-\setCJKmainfont[BoldFont={Noto Serif CJK SC Bold}]{Noto Serif CJK SC}
-\setCJKsansfont[BoldFont={Noto Sans CJK SC Bold}]{Noto Sans CJK SC}
-\setCJKmonofont{Noto Sans CJK SC}
+\documentclass[11pt,a4paper,fontset=windows]{ctexart}
 \usepackage{geometry}
 \geometry{margin=2.3cm}
 
@@ -142,12 +138,12 @@ make run/m0_env/02_device_query
 \toprule
 项目 & 你的卡 \\
 \midrule
-型号 / compute capability & \\
-SM 数量 & \\
-warp 大小 & \\
-shared memory / block & \\
-最大常驻线程 / SM & \\
-显存总量 & \\
+型号 / compute capability & NVIDIA GeForce RTX 5090 / 12.0 \\
+SM 数量 & 170 \\
+warp 大小 & 32 \\
+shared memory / block & 48 KiB（49152 B） \\
+最大常驻线程 / SM & 1536 \\
+显存总量 & 约 31.36 GiB（33668857856 B，标称 32 GB） \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -171,9 +167,13 @@ Guide 1.1、1.2.1--1.2.2；LCPU 讲义\footnote{\url{https://github.com/interest
 判断对错，可以顺带补一句理由。
 \begin{enumerate}[label=(\alph*)]
   \item 一块标称 100 TFLOPS 的 GPU，执行单条指令的延迟一定低于 5 GHz 的 CPU。
+  \par\textbf{回答：}错。100 TFLOPS 描述的是大量并行运算的整体吞吐，而非单条指令的延迟；GPU 主要通过大量并发 warp 的调度隐藏延迟，单条指令的延迟不一定低于 CPU。5 GHz 也只是时钟频率，不能直接等同于指令延迟。
   \item HBM 的“高带宽”指大块连续访问时的吞吐，零散的随机访问达不到标称值。
+  \par\textbf{回答：}对。连续访问容易形成合并访存，能充分利用较宽的内存总线；零散随机访问会产生分散的内存事务，实际吞吐因而远低于标称带宽。
   \item 严格串行的迭代算法（每步依赖上一步的结果），即使换一块算力更强的 GPU 也快不了多少。
+  \par\textbf{回答：}对。前后步骤之间的依赖使算法缺少可并行执行的工作，更多 GPU 计算单元无法同时发挥作用，总耗时主要受串行依赖链上每一步的延迟限制。
   \item “算力 1000 TFLOPS”意味着每次运算的延迟是 $10^{-15}$ 秒。
+  \par\textbf{回答：}错。1000 TFLOPS 表示理想条件下大量并行运算合计每秒可完成约 $10^{15}$ 次浮点运算，是整体吞吐指标；其倒数不能解释为单次运算的执行延迟。
 \end{enumerate}
 
 \prob{1.2}{CONCEPT}
