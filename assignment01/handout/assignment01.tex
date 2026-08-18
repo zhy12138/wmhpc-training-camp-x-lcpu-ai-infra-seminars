@@ -305,8 +305,11 @@ make run/m2_first_kernel/02_vector_add_um
 判断对错，可以顺带补一句理由。
 \begin{enumerate}[label=(\alph*)]
   \item \texttt{vectorAdd<<<...>>>(...)} 这条语句返回时，kernel 一定已经执行完毕。
+  \par\textbf{回答：} 错。kernel 启动相对于 host 通常是异步的，启动语句返回只表示任务已经提交，并不保证 kernel 已经执行完毕。
   \item 同一个 stream 里，\texttt{cudaMemcpy}（device 到 host）会等它前面的 kernel 全部完成后才开始拷贝。
+  \par\textbf{回答：} 对。同一个 stream 中的操作按顺序执行，因此 device 到 host 的 \texttt{cudaMemcpy} 会等待此前的 kernel 完成；该同步拷贝返回时，数据也已经复制到 host。
   \item kernel 内部的非法访存，会在启动语句处同步地报出来。
+  \par\textbf{回答：} 错。启动语句只能立即暴露执行配置等启动错误；kernel 执行期间发生的非法访存属于异步错误，通常要到 \texttt{cudaDeviceSynchronize()}、同步拷贝或后续 CUDA API 调用时才会被报告。
 \end{enumerate}
 
 \prob{2.5}{DEBUG}[cuda/m2\_first\_kernel/03\_bug\_launch.cu]
