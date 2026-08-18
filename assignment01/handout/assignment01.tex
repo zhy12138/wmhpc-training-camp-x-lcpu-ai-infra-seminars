@@ -354,6 +354,10 @@ make run/m2_first_kernel/06_whoami
 
 (a)~顺序由谁决定？(b)~程序的正确性可以依赖 block 的执行顺序吗？这条限制和 Guide 1.1 说的 scalable programming model 有什么关系？
 
+\par\textbf{回答：} (a)~block 的执行顺序由 GPU 硬件调度器根据 SM 和资源可用情况决定，不保证按 \texttt{blockIdx.x} 排序，每次运行也可能不同。
+
+(b)~正确性不能依赖 block 的执行顺序。各 block 应相互独立，才能被任意分配到不同数量的 SM 上并分批执行；这是 CUDA scalable programming model 能适配不同规模 GPU 的基础。
+
 \begin{capstone}{prob 2.9（FROM-SCRATCH）：SAXPY \hfill {\footnotesize\ttfamily cuda/m2\_first\_kernel/saxpy.cu}}
 在 \texttt{m2\_first\_kernel/} 下写出完整的 CUDA 程序 \texttt{saxpy.cu}，实现 $y \leftarrow 2.0 \cdot x + y$（单精度）。要求如下:
 \begin{itemize}
