@@ -342,6 +342,8 @@ make run/m2_first_kernel/05_grid_stride
 
 然后请回答——这种写法的价值在哪里？launch 只有 16384 个线程时，性能上要付出什么代价？
 
+\par\textbf{回答：} Grid-stride loop 让固定数量的线程处理任意规模的数据，使 launch 配置与数据大小解耦，同时保持合并访存。本题每个线程需循环处理约 1024 个元素，会增加循环开销；若 64 个 block 无法充分占满所有 SM，还会降低并行度和延迟隐藏能力。
+
 \prob{2.8}{EXPERIMENT}[cuda/m2\_first\_kernel/06\_whoami.cu]
 运行下面的程序两三次，观察 16 个 block 打印输出的先后。
 
