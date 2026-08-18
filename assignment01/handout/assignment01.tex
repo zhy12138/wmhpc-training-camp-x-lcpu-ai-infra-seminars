@@ -297,6 +297,10 @@ make run/m2_first_kernel/02_vector_add_um
 
 然后请回答如下问题：(a)~kernel 启动之后、CPU 读结果之前，为什么必须有一次同步？在原先的版本里这次同步发生在哪个调用里？(b)~对比两版“搬运 + kernel + 读回”的耗时，分析差距的原因（谁快谁慢都有可能，与使用的卡有关）。
 
+\par\textbf{回答：} (a)~kernel 启动是异步的；如果 CPU 在 kernel 完成前读取结果，就可能与 GPU 对结果的写入发生竞争，从而读到不完整的数据。当前代码中的 \texttt{CUDA\_CHECK\_KERNEL()} 宏会调用 \texttt{cudaDeviceSynchronize()} 完成同步。原先的显式内存版本中，从 device 到 host 的 \texttt{cudaMemcpy} 本身也会等待此前的 kernel 完成（不过该版本在执行到这里之前，\texttt{CUDA\_CHECK\_KERNEL()} 已经同步过一次）。
+
+(b)~显式内存版本耗时为 $110.9\,\mathrm{ms}$，Unified Memory 版本耗时为 $94.9\,\mathrm{ms}$，后者在本次测试中约快 $110.9/94.9 \approx 1.17$ 倍。Unified Memory 并没有消除数据搬运，而是把显式的 \texttt{cudaMemcpy} 换成了由驱动管理的按需页面迁移；在本机上，这种迁移方式的总体开销较低。该结果与 GPU、CPU--GPU 互连和页面迁移策略有关，因此换一台机器后快慢关系可能不同。
+
 \prob{2.4}{CONCEPT}
 判断对错，可以顺带补一句理由。
 \begin{enumerate}[label=(\alph*)]
