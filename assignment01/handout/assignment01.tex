@@ -276,10 +276,15 @@ make run/m2_first_kernel/01_vector_add
 为下列五个场景选择正确的修饰符（如 \texttt{\_\_global\_\_} 等）。
 \begin{enumerate}[label=(\alph*)]
   \item 在 GPU 上执行、由 CPU 侧启动的 kernel 函数。
+  \par\textbf{回答：} \texttt{\_\_global\_\_}
   \item 只会被 kernel 调用的辅助函数。
+  \par\textbf{回答：} \texttt{\_\_device\_\_}
   \item host 和 device 代码都要调用的小工具函数。
+  \par\textbf{回答：} \texttt{\_\_host\_\_ \_\_device\_\_}
   \item 整个 kernel 运行期间不变、所有线程都要读的系数表。
+  \par\textbf{回答：} \texttt{\_\_constant\_\_}
   \item block 内线程共享的暂存数组。
+  \par\textbf{回答：} \texttt{\_\_shared\_\_}
 \end{enumerate}
 
 \prob{2.3}{MODIFY}[cuda/m2\_first\_kernel/02\_vector\_add\_um.cu]
