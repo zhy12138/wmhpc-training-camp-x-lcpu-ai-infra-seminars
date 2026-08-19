@@ -568,15 +568,21 @@ make run/m4_memory/06_occupancy
 \begin{center}\small
 \begin{tabular}{@{}lcccccc@{}}
 \toprule
-shared memory / block (KB) & & & & & & \\
-理论驻留 block / SM & & & & & & \\
-occupancy & & & & & & \\
-实测带宽 (GB/s) & & & & & & \\
+shared memory / block (KB) & 0.0 & 13.2 & 15.0 & 18.0 & 29.0 & 55.0 \\
+理论驻留 block / SM & 6 & 6 & 6 & 5 & 3 & 1 \\
+occupancy & 100.0\% & 100.0\% & 100.0\% & 83.3\% & 50.0\% & 16.7\% \\
+实测带宽 (GB/s) & 1572.9 & 1572.2 & 1574.8 & 1576.5 & 1579.5 & 820.4 \\
 \bottomrule
 \end{tabular}
 \end{center}
 
 请回答：(a)~用程序开头打印的“shared memory / SM”和“最大常驻线程 / SM”，手算其中一个的驻留 block 数和 occupancy，和 API 的结果对照。(b)~带宽为什么随 occupancy 下降？用“延迟隐藏需要足够多的常驻 warp”组织你的解释。(c)~表中带宽随 occupancy 单调下降，但明显不成正比——从 100\% 到 75\% 带宽掉了多少？从 37.5\% 到 12.5\% 又掉了多少？试解释这个差别。
+
+\par\textbf{回答：}(a) 以 29.0 KB 为例，每个 SM 最多驻留 $\lfloor100/29\rfloor=3$ 个 block，occupancy 为 $3\times256/1536=50\%$，与 API 一致。
+
+(b) occupancy 降低会减少常驻 warp；当可调度的 warp 不足时，访存等待无法被其他 warp 的执行隐藏，带宽便会下降。
+
+(c) 本机最大常驻线程数为 1536，故没有题面预设的 75\%、37.5\% 和 12.5\% 档位。实测从 100\% 降至 50\% 时带宽基本不变，说明 24 个常驻 warp 已足以隐藏延迟；从 50\% 降至 16.7\% 时，带宽由 1579.5 降至 820.4 GB/s，下降约 48.1\%，因为仅剩 8 个常驻 warp，延迟隐藏能力不足。
 
 \begin{lookback}
 本模块的八道题围绕同一个问题展开：数据放在哪一层，以什么模式去取。prob 4.1 给出一幅静态的存储层次地图，prob 4.2 与 4.3 在同一段 stencil 上切换存储位置，prob 4.5 与 4.6 在同一个直方图统计上做同样的变换，prob 4.7 和 4.8 则分别量化访问模式与可并发的请求数量。
