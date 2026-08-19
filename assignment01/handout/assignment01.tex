@@ -754,14 +754,14 @@ uv run pytest tests/test_tilelang.py -k copy2d
 补全下表，每个空填“用户”或“编译器”（二者都涉及的要写清楚各自的范围）。
 
 \begin{center}\small
-\begin{tabular}{@{}lcccc@{}}
+\begin{tabular}{@{}lp{6em}p{8em}p{8em}p{9em}@{}}
 \toprule
 谁负责 & CUDA SIMT & cuTile & Triton & TileLang \\
 \midrule
-线程到数据的映射 & 用户 & & & \\
-边界处理 & 用户 & & & \\
-tile / block 尺寸的选择 & 用户 & & & \\
-block 内同步 & 用户 & & & \\
+线程到数据的映射 & 用户 & 编译器 & 编译器（用户划分 program） & 编译器（用户定义 tile / 循环） \\
+边界处理 & 用户 & 编译器（用户选 padding） & 用户提供 mask & 二者：\texttt{T.copy} 自动，直接访问可显式判断 \\
+tile / block 尺寸的选择 & 用户 & 用户定 tile，编译器定线程数 & 用户定 tile / \texttt{num\_warps} & 用户定 tile / threads \\
+block 内同步 & 用户 & 编译器 & 编译器（必要时用户可插 barrier） & 二者：高层操作由编译器，低层代码由用户 \\
 \bottomrule
 \end{tabular}
 \end{center}
