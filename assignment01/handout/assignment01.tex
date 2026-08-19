@@ -618,8 +618,11 @@ make run/m5_async/01_timing_trap
 判断对错，可以顺带补一句理由。
 \begin{enumerate}[label=(\alph*)]
   \item 同一个 stream 里的操作按提交顺序执行。
+  \par\textbf{回答：}正确。同一 stream 内的操作按入队顺序执行。
   \item kernel 启动后，host 代码立刻继续往下执行。
+  \par\textbf{回答：}正确。kernel launch 通常对 host 异步，除非随后显式同步。
   \item unified memory 下，CPU 访问一页正被 GPU 占用的内存，会触发缺页与页迁移。
+  \par\textbf{回答：}正确。CPU 缺页后，运行时会协调访问并将该页迁移到 CPU。
 \end{enumerate}
 
 \begin{lookback}
