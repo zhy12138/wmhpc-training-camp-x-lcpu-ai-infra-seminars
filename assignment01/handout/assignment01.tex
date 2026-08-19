@@ -417,12 +417,18 @@ Guide 2.3.1--2.3.2、1.2.2.2。3.3、3.5 要用 shared memory，用法见 Guide 
 \prob{3.2}{EXPERIMENT}[cuda/m3\_simt/01\_divergence.cu]
 \texttt{m3\_simt/01\_divergence.cu} 的两个 kernel 每线程计算量相同，分支划分不同——一个按 thread 编号的奇偶分（同一个 warp 里一半一半），一个按 warp 边界对齐分。请先预测一下哪个版本运行会更快一点，大概快几倍，然后运行验证：
 
+\par\textbf{预测：}按 warp 边界对齐的版本更快，预计约快 2 倍。按线程编号奇偶分时，每个 warp 的两条分支路径都要依次执行，且每条路径只有一半 lane 活跃；按 warp 分支时，一个 warp 内的 32 个 lane 走同一条路径，不发生分支发散。
+
 \begin{lstlisting}
 cd assignment01/cuda
 make run/m3_simt/01_divergence
 \end{lstlisting}
 
 请解释实测比值，并回答——若两个分支的计算量一大一小，按 thread 编号奇偶分的 kernel 和按 warp 边界对齐分的 kernel 的运行时间分别由什么决定？
+
+\par\textbf{回答：}实测 warp 内分支为 $0.387\ \mathrm{ms}$，按 warp 分支为 $0.200\ \mathrm{ms}$，前者是后者的 $1.94$ 倍，与约 2 倍的预测接近。warp 内奇偶分支时，硬件先用一半 active mask 执行一条路径，再切换 mask 执行另一条路径，因此每个 warp 几乎承担两条路径的指令；按 warp 对齐时，每个 warp 只执行一条路径且所有 lane 都有效。比值没有恰好等于 2，是因为两版还包含索引、分支判断和写回等共同开销，并会受到指令调度与测量波动影响。
+
+若两个分支的计算量不同，奇偶分支版本的每个 warp 仍需串行执行两条路径，时间近似由两条路径的耗时之和决定。按 warp 对齐版本中，每个 warp 的时间只由它选择的那条路径决定；整个 grid 的吞吐由两类 warp 的数量和总工作量决定，收尾阶段则可能由执行较重分支的 warp 决定。
 
 \prob{3.3}{EXPERIMENT}[cuda/m3\_simt/02\_sync\_matters.cu]
 \texttt{02\_sync\_matters.cu} 让每个 block 用 shared memory 把自己的 256 个元素倒序。请按文件开头的注释内容进行实验。
