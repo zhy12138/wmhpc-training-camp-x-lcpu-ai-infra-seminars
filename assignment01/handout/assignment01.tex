@@ -502,6 +502,8 @@ make run/m4_memory/02_constant_coeff
 
 结果会包含两个版本的耗时（差距可能极小，甚至测不出来性能收益——想想为什么），回答 constant cache 真正的优势在哪种访问模式。
 
+\par\textbf{回答：}两版均 PASS，耗时均为 $0.0718\ \mathrm{ms}$，比值 $1.00\times$。constant cache 的优势是同一 warp 读取同一地址时可广播数据；本题仅有 8 个系数，global 版本也容易命中缓存，因此未测出收益。
+
 \prob{4.4}{CONCEPT}
 判断对错，可以顺带补一句理由。
 \begin{enumerate}[label=(\alph*)]
