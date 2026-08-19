@@ -776,6 +776,8 @@ uv run pytest tests/test_tilelang.py -k matmul
 
 填完回答——这五个空涉及到了 shared memory、寄存器 tile、流水，而 Triton 版 matmul（Bonus 的 \texttt{kernels/matmul\_triton.py}）并未被显式指定，为什么？
 
+\par\textbf{回答：}Triton 只表达 block tensor 的 load、\texttt{tl.dot} 和数据依赖，编译器据此决定寄存器与 shared memory 的布局，并插入同步和流水调度；用户仍需选择 tile 尺寸。
+
 \begin{capstone}{prob 7.7（FROM-SCRATCH）：softmax in TileLang \hfill {\footnotesize\ttfamily kernels/tilelang\_softmax.py}}
 在 \texttt{kernels/tilelang\_softmax.py} 里从零实现行 softmax，具体要求见文件开头的 docstring。
 \end{capstone}
