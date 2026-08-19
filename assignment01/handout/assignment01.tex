@@ -676,10 +676,10 @@ def vec_add(a, b, c, TILE: ct.Constant[int]):
 \toprule
  & CUDA SIMT & cuTile & Triton \\
 \midrule
-并行单位 & block 里的 thread & block & \\
-编号 & \texttt{blockIdx} / \texttt{threadIdx} &  & \\
-数据分工 & 线程用全局下标来划分数据 &  & \\
-边界处理 & \texttt{if} 判断 &  & \\
+并行单位 & block 里的 thread & block & program instance \\
+编号 & \texttt{blockIdx} / \texttt{threadIdx} & \texttt{ct.bid(axis)} & \texttt{tl.program\_id} \\
+数据分工 & 线程用全局下标来划分数据 & block 按编号选择 tile，tile 内由编译器分工 & program 用偏移向量划分数据 \\
+边界处理 & \texttt{if} 判断 & load 填充、store 忽略越界元素 & load/store 使用 mask \\
 \bottomrule
 \end{tabular}
 \end{center}
