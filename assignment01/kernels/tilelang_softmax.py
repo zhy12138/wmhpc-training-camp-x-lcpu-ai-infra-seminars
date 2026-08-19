@@ -23,6 +23,45 @@ import torch
 import tilelang
 import tilelang.language as T
 
+def make_softmax(M, N, dtype="float32"):
+    N_pad = 1 << (N - 1).bit_length()
+
+    @T.prim_func
+    def main(
+        X: T.Buffer((M, N), dtype),
+        Y: T.Buffer((M, N), dtype),
+    ):
+        with T.Kernel(M, threads=128) as (bx):
+            row = T.alloc_fragment((N_pad,), dtype)
+            row_max = T.alloc_fragment((1,), dtype)
+            row_sum = T.alloc_fragment((1,), dtype)
+
+            for j in T.Parallel(N_pad):
+                row[j] = T.if_then_else(
+                    j < N,
+                    X[bx, j],
+                    -T.infinity(dtype),
+                )
+
+            T.reduce_max(row, row_max, dim=0)
+
+            for j in T.Parallel(N_pad):
+                row[j] = T.exp(row[j] - row_max[0])
+
+            T.reduce_sum(row, row_sum, dim=0)
+
+            for j in T.Parallel(N_pad):
+                if j < N:
+                    Y[bx, j] = row[j] / row_sum[0]
+
+    return main
 
 def softmax(x: torch.Tensor) -> torch.Tensor:
-    raise NotImplementedError("从这里开始写")
+    M, N = x.shape
+
+    kernel = tilelang.compile(
+                make_softmax(M, N),
+                out_idx=[1],
+            )
+
+    return kernel(x)
