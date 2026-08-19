@@ -438,7 +438,17 @@ cd assignment01/cuda
 make run/m3_simt/02_sync_matters
 \end{lstlisting}
 
-(a)~为什么注释掉 sync 后代码不能正确地运行？(b)~(Optional) 注释掉 sync 后，翻转后的数组错的位置比较随机，但是有些位置一直是对的，试解释原因。（tip: 算一算 $t$ 与 $255-t$ 有没有可能落在同一个 warp）
+\begin{enumerate}[label=(\alph*)]
+  \item 为什么注释掉 sync 后代码不能正确地运行？
+
+  \par\textbf{回答：}每个线程先写入 \texttt{buf[t]}，随后读取由另一个线程写入的 \texttt{buf[255-t]}。去掉 \texttt{\_\_syncthreads()} 后，block 内不同 warp 的执行进度没有保证，某个线程可能在目标线程完成 shared memory 写入之前就开始读取，形成读写竞争。\texttt{\_\_syncthreads()} 既让所有线程在此会合，也保证此前对 shared memory 的写入对 block 内线程可见，因此这里不能省略。
+
+  \item (Optional) 注释掉 sync 后，翻转后的数组错的位置比较随机，但是有些位置一直是对的，试解释原因。（tip: 算一算 $t$ 与 $255-t$ 有没有可能落在同一个 warp）
+
+  \par\textbf{回答：}若线程 $t$ 位于 warp $w=\lfloor t/32\rfloor$，则线程 $255-t$ 位于 warp $7-w$。要让二者在同一 warp，需要 $w=7-w$，但不存在满足条件的整数 $w$，所以每次读取都依赖另一个 warp 的写入，不能依靠 warp 内同步保证正确性。
+
+  某些位置看起来一直正确，是实际 warp 调度顺序造成的偶然结果。例如一个 warp 较早完成写入后，稍后运行的对应 warp 就可能读到正确数据；反方向的读取却可能发生在写入之前。硬件调度在若干次运行中可能表现得较稳定，于是部分位置反复正确，但 CUDA 不保证这种顺序，不能据此判断程序正确。
+\end{enumerate}
 
 \prob{3.4}{CONCEPT}
 \texttt{\_\_syncthreads} 只能同步本 block 内的 threads，那需要全 grid 同步时，标准做法是什么？
