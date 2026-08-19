@@ -531,6 +531,8 @@ make run/m4_memory/04_histogram_priv
 
 测试结果包含与 naive 实现相比较的耗时、吞吐。试解释提速来自哪里。
 
+\par\textbf{回答：}naive 为 $2.6092\ \mathrm{ms}$，私有化版为 $0.0754\ \mathrm{ms}$，提速 $34.60\times$。私有化把大部分竞争转移到低延迟的 block-local shared memory，最后每个 block 仅合并 256 个 bucket，大幅减少了 global atomic 操作和跨 block 竞争。
+
 \prob{4.7}{EXPERIMENT}[cuda/m4\_memory/05\_bandwidth.cu]
 运行实验，并根据实验数据填表。
 

@@ -22,6 +22,26 @@ __global__ void histogram_naive(const unsigned char *data, unsigned int *hist,
 __global__ void histogram_priv(const unsigned char *data, unsigned int *hist,
                                int n) {
     // TODO：从这里开始写（shared memory 私有化版本）
+    __shared__ unsigned int block_hist[BINS];
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int stride = blockDim.x * gridDim.x;
+
+    if (threadIdx.x == 0) {
+        for(int j = 0; j < BINS; j++)
+            block_hist[j] = 0;
+    }
+    __syncthreads();
+
+    for (; i < n; i += stride) {
+        atomicAdd(&block_hist[data[i]], 1u);
+    }
+    __syncthreads();
+
+    if (threadIdx.x == 0) {
+        for(int j = 0; j < BINS; j++)
+            atomicAdd(&hist[j], block_hist[j]);
+    }
+
 }
 
 // ---------------- 以下是判测与计时，不要修改 ----------------
