@@ -167,23 +167,19 @@ Guide 1.1、1.2.1--1.2.2；LCPU 讲义\footnote{\url{https://github.com/interest
 判断对错，可以顺带补一句理由。
 \begin{enumerate}[label=(\alph*)]
   \item 一块标称 100 TFLOPS 的 GPU，执行单条指令的延迟一定低于 5 GHz 的 CPU。
-  \par\textbf{回答：}错。100 TFLOPS 描述的是大量并行运算的整体吞吐，而非单条指令的延迟；GPU 主要通过大量并发 warp 的调度隐藏延迟，单条指令的延迟不一定低于 CPU。5 GHz 也只是时钟频率，不能直接等同于指令延迟。
+  \par\textbf{回答：}错。TFLOPS 衡量并行吞吐，GHz 表示时钟频率，都不能直接代表单条指令的延迟。
   \item HBM 的“高带宽”指大块连续访问时的吞吐，零散的随机访问达不到标称值。
-  \par\textbf{回答：}对。连续访问容易形成合并访存，能充分利用较宽的内存总线；零散随机访问会产生分散的内存事务，实际吞吐因而远低于标称带宽。
+  \par\textbf{回答：}对。连续访问便于合并访存；随机访问会产生分散的内存事务，难以达到标称带宽。
   \item 严格串行的迭代算法（每步依赖上一步的结果），即使换一块算力更强的 GPU 也快不了多少。
-  \par\textbf{回答：}对。前后步骤之间的依赖使算法缺少可并行执行的工作，更多 GPU 计算单元无法同时发挥作用，总耗时主要受串行依赖链上每一步的延迟限制。
+  \par\textbf{回答：}对。步骤间的依赖限制并行度，总耗时主要由串行依赖链的延迟决定。
   \item “算力 1000 TFLOPS”意味着每次运算的延迟是 $10^{-15}$ 秒。
-  \par\textbf{回答：}错。1000 TFLOPS 表示理想条件下大量并行运算合计每秒可完成约 $10^{15}$ 次浮点运算，是整体吞吐指标；其倒数不能解释为单次运算的执行延迟。
+  \par\textbf{回答：}错。1000 TFLOPS 是整体吞吐指标，其倒数不是单次运算延迟。
 \end{enumerate}
 
 \prob{1.2}{CONCEPT}
 Session 1 讲座里提过“N 方过百万”这个例子。总计算量 $10^{12}$ FLOP 在当代 GPU 上的运算时间大概是毫秒级，那为什么一个严格在线的串行算法仍然做不到几秒内跑完？（从“延迟”和“吞吐”的角度考虑）
 
-\par\textbf{回答：}
-
-延迟上，GPU 延迟更大，需要通过大量并行计算来掩盖延迟，而串行使得无法掩盖
-
-吞吐上，虽然 GPU 吞吐很大，但是串行使得后面的计算必须等待前面的计算，无法发挥吞吐优势
+\par\textbf{回答：}GPU 依靠大量并行任务隐藏延迟并发挥吞吐；严格串行时，每一步都要等待上一步，既无法隐藏延迟，也无法利用并行算力。
 
 \prob{1.3}{CONCEPT}
 补全下表（thread 一行已填好作为示例）
@@ -204,11 +200,7 @@ grid & 一次 kernel launch 的全部 block & 整块 GPU 上的多个 SM & globa
 \prob{1.4}{CONCEPT}
 SIMD 与 SIMT 的区别？另：判断正误——Nvidia GPU 在 Volta 之后每个线程有独立的 program counter，所以 branch divergence 不再有性能代价。
 
-\par\textbf{回答：}
-
-SIMD 是一条向量指令同时作用于多个数据元素，程序通常显式使用向量类型、向量宽度或掩码。SIMT 则让程序员编写看似独立的标量线程，每个线程有自己的寄存器和线程编号，但硬件会把多个线程组成 warp，共同发射指令。
-
-判断为错。Volta 之后的 Independent Thread Scheduling 允许线程拥有更独立的执行状态和 program counter，但硬件仍以 warp 为主要执行与发射单位。发生 branch divergence 时，不同分支路径通常仍需分别执行，未参与当前路径的 lane 会闲置，因此仍有性能损失。
+\par\textbf{回答：}SIMD 用一条显式向量指令处理多个元素；SIMT 让程序员编写独立标量线程，硬件再将其组成 warp 共同发射。判断为错：Volta 的独立线程调度没有改变 warp 发射方式，分支路径仍需分别执行，空闲 lane 仍会造成损失。
 
 \prob{1.5}{EXPERIMENT}[cuda/m1\_why\_gpu/01\_scaling.cu]
 同一个向量加法，四种配置各跑一遍。
@@ -237,8 +229,8 @@ GPU 铺满 grid & 0.025 & 0.01 \\
 
 \par\textbf{回答：}
 \begin{enumerate}[label=(\alph*)]
-  \item CPU 核心针对单线程低延迟进行了优化，具有较高的时钟频率、乱序执行、缓存和预取等机制；而 \texttt{<<<1,1>>>} 只启动一个 warp 中的一个有效 lane，其余 lane 以及几乎整块 GPU 都处于空闲状态，也没有其他 warp 可用于隐藏访存和指令延迟。因此 GPU 单线程反而比 CPU 单线程慢得多。
-  \item 从单个 block 扩展到铺满 grid 后，大量 block 可以分布到多个 SM 上并行执行，同时保留足够多的活跃 warp 来隐藏延迟并充分利用访存带宽。这说明 GPU 加速依赖的是大规模并行带来的总吞吐，而不是单个线程执行得更快。表中的每元素耗时是总耗时按元素数平均后的吞吐指标，并非单个元素的真实执行延迟。
+  \item CPU 针对单线程低延迟优化；\texttt{<<<1,1>>>} 只有一个有效 lane，既浪费 GPU 资源，也没有其他 warp 隐藏延迟，因此更慢。
+  \item 铺满 grid 后，大量 block 分布到多个 SM，活跃 warp 可隐藏延迟并利用带宽，说明 GPU 加速依赖大规模并行吞吐。
 \end{enumerate}
 
 \prob[Optional]{1.6}{FROM-SCRATCH}[kernels/simt\_sim.py]
@@ -297,19 +289,19 @@ make run/m2_first_kernel/02_vector_add_um
 
 然后请回答如下问题：(a)~kernel 启动之后、CPU 读结果之前，为什么必须有一次同步？在原先的版本里这次同步发生在哪个调用里？(b)~对比两版“搬运 + kernel + 读回”的耗时，分析差距的原因（谁快谁慢都有可能，与使用的卡有关）。
 
-\par\textbf{回答：} (a)~kernel 启动是异步的；如果 CPU 在 kernel 完成前读取结果，就可能与 GPU 对结果的写入发生竞争，从而读到不完整的数据。当前代码中的 \texttt{CUDA\_CHECK\_KERNEL()} 宏会调用 \texttt{cudaDeviceSynchronize()} 完成同步。原先的显式内存版本中，从 device 到 host 的 \texttt{cudaMemcpy} 本身也会等待此前的 kernel 完成（不过该版本在执行到这里之前，\texttt{CUDA\_CHECK\_KERNEL()} 已经同步过一次）。
+\par\textbf{回答：} (a)~kernel 异步执行，CPU 读结果前必须等待 GPU 写完。当前版本显式同步；原版本的 device-to-host \texttt{cudaMemcpy} 也会等待此前的 kernel。
 
-(b)~显式内存版本耗时为 $110.9\,\mathrm{ms}$，Unified Memory 版本耗时为 $94.9\,\mathrm{ms}$，后者在本次测试中约快 $110.9/94.9 \approx 1.17$ 倍。Unified Memory 并没有消除数据搬运，而是把显式的 \texttt{cudaMemcpy} 换成了由驱动管理的按需页面迁移；在本机上，这种迁移方式的总体开销较低。该结果与 GPU、CPU--GPU 互连和页面迁移策略有关，因此换一台机器后快慢关系可能不同。
+(b)~显式内存版为 $110.9\,\mathrm{ms}$，Unified Memory 版为 $94.9\,\mathrm{ms}$，后者快约 $1.17$ 倍。本机的按需页面迁移开销较低，但结果依赖硬件互连和迁移策略。
 
 \prob{2.4}{CONCEPT}
 判断对错，可以顺带补一句理由。
 \begin{enumerate}[label=(\alph*)]
   \item \texttt{vectorAdd<<<...>>>(...)} 这条语句返回时，kernel 一定已经执行完毕。
-  \par\textbf{回答：} 错。kernel 启动相对于 host 通常是异步的，启动语句返回只表示任务已经提交，并不保证 kernel 已经执行完毕。
+  \par\textbf{回答：} 错。kernel 启动通常是异步的，返回只表示任务已提交。
   \item 同一个 stream 里，\texttt{cudaMemcpy}（device 到 host）会等它前面的 kernel 全部完成后才开始拷贝。
-  \par\textbf{回答：} 对。同一个 stream 中的操作按顺序执行，因此 device 到 host 的 \texttt{cudaMemcpy} 会等待此前的 kernel 完成；该同步拷贝返回时，数据也已经复制到 host。
+  \par\textbf{回答：} 对。同一 stream 按顺序执行，同步拷贝会等待此前的 kernel。
   \item kernel 内部的非法访存，会在启动语句处同步地报出来。
-  \par\textbf{回答：} 错。启动语句只能立即暴露执行配置等启动错误；kernel 执行期间发生的非法访存属于异步错误，通常要到 \texttt{cudaDeviceSynchronize()}、同步拷贝或后续 CUDA API 调用时才会被报告。
+  \par\textbf{回答：} 错。启动处只能立即发现配置错误；非法访存等异步错误要到同步或后续 CUDA API 调用时才会报告。
 \end{enumerate}
 
 \prob{2.5}{DEBUG}[cuda/m2\_first\_kernel/03\_bug\_launch.cu]
@@ -320,9 +312,7 @@ cd assignment01/cuda
 make run/m2_first_kernel/03_bug_launch
 \end{lstlisting}
 
-\par\textbf{回答：} 每个 block 的 2048 个线程超过了 \texttt{maxThreadsPerBlock}，导致 \texttt{invalid configuration argument}。kernel 启动不直接返回错误；未调用 \texttt{cudaGetLastError()} 时，结果只表现为 \texttt{FAIL}。加入 \texttt{CUDA\_CHECK\_KERNEL()} 并将线程数改为 1024 即可。
-
-相关上限是“单个 block 的最大线程数”。
+\par\textbf{回答：} 每个 block 的 2048 个线程超过 \texttt{maxThreadsPerBlock}，导致 \texttt{invalid configuration argument}。加入启动错误检查并将线程数改为 1024 后通过；该上限针对单个 block。
 
 \prob{2.6}{FILL-IN}[cuda/m2\_first\_kernel/04\_matrix\_add.cu]
 \texttt{04\_matrix\_add.cu} 用二维的 block 和 grid 处理 $1000 \times 700$ 的矩阵，请填空实现矩阵加法。测试命令：
@@ -342,7 +332,7 @@ make run/m2_first_kernel/05_grid_stride
 
 然后请回答——这种写法的价值在哪里？launch 只有 16384 个线程时，性能上要付出什么代价？
 
-\par\textbf{回答：} Grid-stride loop 让固定数量的线程处理任意规模的数据，使 launch 配置与数据大小解耦，同时保持合并访存。本题每个线程需循环处理约 1024 个元素，会增加循环开销；若 64 个 block 无法充分占满所有 SM，还会降低并行度和延迟隐藏能力。
+\par\textbf{回答：} Grid-stride loop 用固定线程数处理任意规模数据，并保持合并访存。代价是循环开销；block 太少时还会降低并行度和延迟隐藏能力。
 
 \prob{2.8}{EXPERIMENT}[cuda/m2\_first\_kernel/06\_whoami.cu]
 运行下面的程序两三次，观察 16 个 block 打印输出的先后。
@@ -354,9 +344,9 @@ make run/m2_first_kernel/06_whoami
 
 (a)~顺序由谁决定？(b)~程序的正确性可以依赖 block 的执行顺序吗？这条限制和 Guide 1.1 说的 scalable programming model 有什么关系？
 
-\par\textbf{回答：} (a)~block 的执行顺序由 GPU 硬件调度器根据 SM 和资源可用情况决定，不保证按 \texttt{blockIdx.x} 排序，每次运行也可能不同。
+\par\textbf{回答：} (a)~顺序由 GPU 根据 SM 和资源状态调度，不保证按 \texttt{blockIdx.x} 排列。
 
-(b)~正确性不能依赖 block 的执行顺序。各 block 应相互独立，才能被任意分配到不同数量的 SM 上并分批执行；这是 CUDA scalable programming model 能适配不同规模 GPU 的基础。
+(b)~正确性不能依赖 block 顺序；block 相互独立，才能被任意分配和分批执行，从而适配不同规模的 GPU。
 
 \begin{capstone}{prob 2.9（FROM-SCRATCH）：SAXPY \hfill {\footnotesize\ttfamily cuda/m2\_first\_kernel/saxpy.cu}}
 在 \texttt{m2\_first\_kernel/} 下写出完整的 CUDA 程序 \texttt{saxpy.cu}，实现 $y \leftarrow 2.0 \cdot x + y$（单精度）。要求如下:
@@ -397,27 +387,22 @@ Guide 2.3.1--2.3.2、1.2.2.2。3.3、3.5 要用 shared memory，用法见 Guide 
 \begin{enumerate}[label=(\alph*)]
   \item \texttt{threadIdx = (3, 5, 0)} 的线性编号是多少？它在第几个 warp、warp 内第几个 lane？
 
-  \par\textbf{回答：}三维线程索引的线性编号为
-  $3 + 5 \times 8 + 0 \times 8 \times 8 = 43$。因此它位于编号为
-  $\lfloor 43/32 \rfloor = 1$ 的 warp（即第 2 个 warp），warp 内 lane
-  编号为 $43 \bmod 32 = 11$（即第 12 个 lane）。
+  \par\textbf{回答：}线性编号为 $3+5\times8=43$；warp 编号为
+  $\lfloor43/32\rfloor=1$（第 2 个），lane 编号为 $43\bmod32=11$（第 12 个）。
 
   \item 这个 block 一共占多少个 warp？
 
-  \par\textbf{回答：}该 block 共有 $8 \times 8 \times 1 = 64$ 个线程，因此恰好占
-  $64/32=2$ 个 warp。
+  \par\textbf{回答：}$8\times8=64$ 个线程，恰好占 2 个 warp。
 
   \item 若 \texttt{blockDim = (33, 1, 1)}，占几个 warp？这样配置浪费在哪里？
 
-  \par\textbf{回答：}33 个线程需要占 2 个 warp。第 1 个 warp 有 32 个有效线程，
-  第 2 个 warp 只有 1 个有效线程，其余 31 个 lane 空闲；硬件仍需以
-  warp 为单位调度和执行，因此浪费了第二个 warp 的大部分执行槽位。
+  \par\textbf{回答：}占 2 个 warp；第二个 warp 仅 1 个 lane 有效，浪费 31 个执行槽位。
 \end{enumerate}
 
 \prob{3.2}{EXPERIMENT}[cuda/m3\_simt/01\_divergence.cu]
 \texttt{m3\_simt/01\_divergence.cu} 的两个 kernel 每线程计算量相同，分支划分不同——一个按 thread 编号的奇偶分（同一个 warp 里一半一半），一个按 warp 边界对齐分。请先预测一下哪个版本运行会更快一点，大概快几倍，然后运行验证：
 
-\par\textbf{预测：}按 warp 边界对齐的版本更快，预计约快 2 倍。按线程编号奇偶分时，每个 warp 的两条分支路径都要依次执行，且每条路径只有一半 lane 活跃；按 warp 分支时，一个 warp 内的 32 个 lane 走同一条路径，不发生分支发散。
+\par\textbf{预测：}按 warp 分支约快 2 倍；奇偶分支使每个 warp 串行执行两条路径，而按 warp 分支不发散。
 
 \begin{lstlisting}
 cd assignment01/cuda
@@ -426,9 +411,7 @@ make run/m3_simt/01_divergence
 
 请解释实测比值，并回答——若两个分支的计算量一大一小，按 thread 编号奇偶分的 kernel 和按 warp 边界对齐分的 kernel 的运行时间分别由什么决定？
 
-\par\textbf{回答：}实测 warp 内分支为 $0.387\ \mathrm{ms}$，按 warp 分支为 $0.200\ \mathrm{ms}$，前者是后者的 $1.94$ 倍，与约 2 倍的预测接近。warp 内奇偶分支时，硬件先用一半 active mask 执行一条路径，再切换 mask 执行另一条路径，因此每个 warp 几乎承担两条路径的指令；按 warp 对齐时，每个 warp 只执行一条路径且所有 lane 都有效。比值没有恰好等于 2，是因为两版还包含索引、分支判断和写回等共同开销，并会受到指令调度与测量波动影响。
-
-若两个分支的计算量不同，奇偶分支版本的每个 warp 仍需串行执行两条路径，时间近似由两条路径的耗时之和决定。按 warp 对齐版本中，每个 warp 的时间只由它选择的那条路径决定；整个 grid 的吞吐由两类 warp 的数量和总工作量决定，收尾阶段则可能由执行较重分支的 warp 决定。
+\par\textbf{回答：}实测为 $0.387\ \mathrm{ms}$ 和 $0.200\ \mathrm{ms}$，比值 $1.94$，符合预测；偏离 2 倍来自共同开销和测量波动。若两条路径计算量不同，奇偶分支的单 warp 耗时近似为两者之和；按 warp 分支时，每个 warp 只承担所选路径，grid 耗时由两类 warp 的总工作量和较重路径的收尾决定。
 
 \prob{3.3}{EXPERIMENT}[cuda/m3\_simt/02\_sync\_matters.cu]
 \texttt{02\_sync\_matters.cu} 让每个 block 用 shared memory 把自己的 256 个元素倒序。请按文件开头的注释内容进行实验。
@@ -441,19 +424,17 @@ make run/m3_simt/02_sync_matters
 \begin{enumerate}[label=(\alph*)]
   \item 为什么注释掉 sync 后代码不能正确地运行？
 
-  \par\textbf{回答：}每个线程先写入 \texttt{buf[t]}，随后读取由另一个线程写入的 \texttt{buf[255-t]}。去掉 \texttt{\_\_syncthreads()} 后，block 内不同 warp 的执行进度没有保证，某个线程可能在目标线程完成 shared memory 写入之前就开始读取，形成读写竞争。\texttt{\_\_syncthreads()} 既让所有线程在此会合，也保证此前对 shared memory 的写入对 block 内线程可见，因此这里不能省略。
+  \par\textbf{回答：}线程读取的是其他线程写入的 \texttt{buf[255-t]}。没有 \texttt{\_\_syncthreads()} 时可能先读后写，产生竞争；该同步保证所有写入完成并可见。
 
   \item (Optional) 注释掉 sync 后，翻转后的数组错的位置比较随机，但是有些位置一直是对的，试解释原因。（tip: 算一算 $t$ 与 $255-t$ 有没有可能落在同一个 warp）
 
-  \par\textbf{回答：}若线程 $t$ 位于 warp $w=\lfloor t/32\rfloor$，则线程 $255-t$ 位于 warp $7-w$。要让二者在同一 warp，需要 $w=7-w$，但不存在满足条件的整数 $w$，所以每次读取都依赖另一个 warp 的写入，不能依靠 warp 内同步保证正确性。
-
-  某些位置看起来一直正确，是实际 warp 调度顺序造成的偶然结果。例如一个 warp 较早完成写入后，稍后运行的对应 warp 就可能读到正确数据；反方向的读取却可能发生在写入之前。硬件调度在若干次运行中可能表现得较稳定，于是部分位置反复正确，但 CUDA 不保证这种顺序，不能据此判断程序正确。
+  \par\textbf{回答：}$t$ 在 warp $w$，$255-t$ 在 warp $7-w$；$w=7-w$ 无整数解，因此二者总在不同 warp。部分位置持续正确只是实际调度顺序较稳定的偶然结果，CUDA 不作保证。
 \end{enumerate}
 
 \prob{3.4}{CONCEPT}
 \texttt{\_\_syncthreads} 只能同步本 block 内的 threads，那需要全 grid 同步时，标准做法是什么？
 
-\par\textbf{回答：}标准做法是把计算拆成多个 kernel：让当前 kernel 结束，再在同一 stream 中启动下一阶段的 kernel。前一个 kernel 的所有 block 都完成后，后一个 kernel 才会开始执行，因此 kernel 边界构成一次全 grid 同步；阶段间的数据通常通过 global memory 传递。若 host 也必须等待，可在 kernel 后调用设备同步 API。cooperative groups 的 grid-wide synchronization 只适用于 cooperative launch 等受限场景，不是普通 kernel 的通用做法。
+\par\textbf{回答：}把计算拆成同一 stream 中的多个 kernel；后一个 kernel 会等待前一个全部完成，因此 kernel 边界就是全 grid 同步，阶段间通过 global memory 传递数据。
 
 \begin{capstone}{prob 3.5（FROM-SCRATCH）：block 内归约 \hfill {\footnotesize\ttfamily cuda/m3\_simt/03\_reduce.cu}}
 在 \texttt{03\_reduce.cu} 里从零实现两个求和归约 kernel（判测与计时的代码已经写好）。两个 kernel 的 contract 见文件头。PASS 后，试解释实测性能差距的原因。
@@ -465,6 +446,8 @@ make run/m3_simt/02_sync_matters
 cd assignment01/cuda
 make run/m3_simt/03_reduce
 \end{lstlisting}
+
+\par\textbf{结果与回答：}关闭 device 优化后，三版均 PASS：interleaved 为 $0.0369\ \mathrm{ms}$，contiguous 和 shuffle 均为 $0.0246\ \mathrm{ms}$。交错版因取模、活跃 lane 分散和分支发散而慢 $1.50\times$；本次测试未测出 shuffle 的额外加速。
 
 \begin{lookback}
 SIMT 让你以单线程的风格编写并行代码，但它只承诺正确性语义，不负责性能语义。本模块的题目正好分别对应这层抽象漏出来的三个口子：warp 才是真实的调度单位（prob 3.2），block 内的并行需要显式同步才能看到彼此的写入（prob 3.3），而 block 之间压根没有提供同步方法（prob 3.4）。
