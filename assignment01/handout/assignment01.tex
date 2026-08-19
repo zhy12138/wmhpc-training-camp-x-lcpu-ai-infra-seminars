@@ -610,6 +610,10 @@ make run/m5_async/01_timing_trap
 并回答下列问题：
 (a)~哪个数值可以当作 kernel 耗时写进报告？(b)~另外两个各具体测的是什么？
 
+\par\textbf{回答：}(a) cudaEvent 测得的 0.0665 ms 可作为 kernel 耗时。
+
+(b) 不等 GPU 的 0.0065 ms 只测到 host 提交 kernel 的开销；等 GPU 的 0.0691 ms 测的是从提交到 GPU 完成的 host 墙钟时间，还包含启动、同步及等待开销。
+
 \prob{5.2}{CONCEPT}
 判断对错，可以顺带补一句理由。
 \begin{enumerate}[label=(\alph*)]
