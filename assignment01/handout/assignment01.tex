@@ -475,11 +475,11 @@ Guide 2.3.3--2.3.5、2.3.7、1.2.3。
 空间 & 谁可见 & 生命周期 & 片上 / 片外 & 谁管理 \\
 \midrule
 register & 单个线程 & 线程 & 片上 & 编译器 \\
-local &  &  &  &  \\
-shared &  &  &  &  \\
-global &  &  &  &  \\
-constant &  &  &  &  \\
-L1 / L2 cache &  &  &  &  \\
+local & 单个线程 & 线程 & 片外（经缓存） & 编译器 \\
+shared & 同一 block & block & 片上 & 程序员 \\
+global & 所有线程；host 经 API & 分配至释放 & 片外 & 程序员 / runtime \\
+constant & 所有线程只读；host 写 & 程序 / module & 片外（片上 cache） & 程序员 / runtime \\
+L1 / L2 cache & L1：同一 SM；L2：全 GPU & 缓存驻留期间 & 片上 & 硬件 \\
 \bottomrule
 \end{tabular}
 \end{center}
