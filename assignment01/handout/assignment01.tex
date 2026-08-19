@@ -748,6 +748,8 @@ uv run pytest tests/test_tilelang.py -k copy2d
 
 填完想一想：2.6 的四个空——行号、列号、边界保护、grid 尺寸——哪些在这里还有对应？没有对应的那个去哪了？
 
+\par\textbf{回答：}行列号对应 \texttt{T.copy} 中的 tile 起点，grid 尺寸对应 \texttt{T.Kernel} 的两个参数；显式边界判断消失了，越界读取的填充和越界写入的忽略由 \texttt{T.copy} 处理。
+
 \prob{7.5}{CONCEPT}
 补全下表，每个空填“用户”或“编译器”（二者都涉及的要写清楚各自的范围）。
 
