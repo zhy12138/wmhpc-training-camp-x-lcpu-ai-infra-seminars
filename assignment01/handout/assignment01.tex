@@ -396,8 +396,22 @@ Guide 2.3.1--2.3.2、1.2.2.2。3.3、3.5 要用 shared memory，用法见 Guide 
 设 \texttt{blockDim = (8, 8, 1)}。
 \begin{enumerate}[label=(\alph*)]
   \item \texttt{threadIdx = (3, 5, 0)} 的线性编号是多少？它在第几个 warp、warp 内第几个 lane？
+
+  \par\textbf{回答：}三维线程索引的线性编号为
+  $3 + 5 \times 8 + 0 \times 8 \times 8 = 43$。因此它位于编号为
+  $\lfloor 43/32 \rfloor = 1$ 的 warp（即第 2 个 warp），warp 内 lane
+  编号为 $43 \bmod 32 = 11$（即第 12 个 lane）。
+
   \item 这个 block 一共占多少个 warp？
+
+  \par\textbf{回答：}该 block 共有 $8 \times 8 \times 1 = 64$ 个线程，因此恰好占
+  $64/32=2$ 个 warp。
+
   \item 若 \texttt{blockDim = (33, 1, 1)}，占几个 warp？这样配置浪费在哪里？
+
+  \par\textbf{回答：}33 个线程需要占 2 个 warp。第 1 个 warp 有 32 个有效线程，
+  第 2 个 warp 只有 1 个有效线程，其余 31 个 lane 空闲；硬件仍需以
+  warp 为单位调度和执行，因此浪费了第二个 warp 的大部分执行槽位。
 \end{enumerate}
 
 \prob{3.2}{EXPERIMENT}[cuda/m3\_simt/01\_divergence.cu]
