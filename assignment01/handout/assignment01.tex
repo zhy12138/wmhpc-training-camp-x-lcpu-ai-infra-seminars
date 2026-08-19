@@ -687,6 +687,10 @@ def vec_add(a, b, c, TILE: ct.Constant[int]):
 \prob{6.3}{CONCEPT}
 仍看上面这段代码。(a)~“每个线程对应哪个/些元素”由谁决定？(b)~列出一些在 CUDA SIMT 版向量加法里一定会出现、这里完全没体现出的概念。
 
+\par\textbf{回答：}(a) 由编译器决定；程序员只指定 block 处理的 tile。
+
+(b) 线程块大小、\texttt{blockIdx}/\texttt{threadIdx}/\texttt{blockDim}、每个线程的全局下标以及 \texttt{if} 越界判断均未体现。
+
 \begin{lookback}
 tile 并非某个 DSL 的发明。NVIDIA 自己把它与 SIMT 并列写进了 Guide 正文，这本身就说明它是一类稳定的编程方式，而不是一次工具选型。
 
