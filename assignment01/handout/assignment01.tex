@@ -644,8 +644,11 @@ Guide 1.2.2.3（必读，篇幅不长）、2.4.1--2.4.6（浏览）、2.2（知�
 判断对错，可以顺带补一句理由。
 \begin{enumerate}[label=(\alph*)]
   \item tile 是显存里的一块可变区域，kernel 通过指针直接改写它。
+  \par\textbf{回答：}错误。tile 是 block 内的不可变值，且不一定存于显存；写回显存应对 global array 执行 store。
   \item 对 tile 的一次运算（如两个 tile 相加）由编译器映射到 block 内的多个线程上执行。
+  \par\textbf{回答：}正确。编译器负责把 tile 运算分配给 block 内的硬件线程。
   \item tile 模型与 SIMT 模型互斥，一个 CUDA 程序只能选一种。
+  \par\textbf{回答：}错误。二者可以存在于同一程序中，编程模型按 kernel 选择。
 \end{enumerate}
 
 \prob{6.2}{CONCEPT}
