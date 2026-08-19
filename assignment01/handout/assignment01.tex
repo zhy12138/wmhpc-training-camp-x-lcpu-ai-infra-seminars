@@ -508,7 +508,9 @@ make run/m4_memory/02_constant_coeff
 判断对错，可以顺带补一句理由。
 \begin{enumerate}[label=(\alph*)]
   \item local memory 的“local”指作用域私有，它实际上在片外显存里。
+  \par\textbf{回答：}对。local 表示每个线程私有，物理上位于片外显存，并可经过 L1/L2 cache。
   \item 对数组用运行期才知道的下标做索引，可能迫使它被放进 local memory。
+  \par\textbf{回答：}对。寄存器不能动态寻址，编译器可能把这类数组放入可寻址的 local memory。
 \end{enumerate}
 
 \prob{4.5}{FILL-IN}[cuda/m4\_memory/03\_histogram.cu]
