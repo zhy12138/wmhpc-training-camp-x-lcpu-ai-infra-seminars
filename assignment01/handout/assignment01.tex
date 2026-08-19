@@ -453,6 +453,8 @@ make run/m3_simt/02_sync_matters
 \prob{3.4}{CONCEPT}
 \texttt{\_\_syncthreads} 只能同步本 block 内的 threads，那需要全 grid 同步时，标准做法是什么？
 
+\par\textbf{回答：}标准做法是把计算拆成多个 kernel：让当前 kernel 结束，再在同一 stream 中启动下一阶段的 kernel。前一个 kernel 的所有 block 都完成后，后一个 kernel 才会开始执行，因此 kernel 边界构成一次全 grid 同步；阶段间的数据通常通过 global memory 传递。若 host 也必须等待，可在 kernel 后调用设备同步 API。cooperative groups 的 grid-wide synchronization 只适用于 cooperative launch 等受限场景，不是普通 kernel 的通用做法。
+
 \begin{capstone}{prob 3.5（FROM-SCRATCH）：block 内归约 \hfill {\footnotesize\ttfamily cuda/m3\_simt/03\_reduce.cu}}
 在 \texttt{03\_reduce.cu} 里从零实现两个求和归约 kernel（判测与计时的代码已经写好）。两个 kernel 的 contract 见文件头。PASS 后，试解释实测性能差距的原因。
 
