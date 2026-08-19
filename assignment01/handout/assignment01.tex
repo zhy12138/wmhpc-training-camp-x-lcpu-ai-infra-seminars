@@ -548,10 +548,12 @@ make run/m4_memory/05_bandwidth
 \toprule
 stride & 1 & 2 & 4 & 8 & 16 & 32 \\
 \midrule
-GB/s & & & & & & \\
+GB/s & 1883.9 & 1196.1 & 738.7 & 596.4 & 1619.7 & 860.1 \\
 \bottomrule
 \end{tabular}
 \end{center}
+
+\par\textbf{回答：}stride 从 1 增至 8 时，warp 的访问逐渐分散，需要更多内存事务，带宽下降。由于 $n$ 和 stride 都是 2 的幂，取模后实际只访问 $n/\text{stride}$ 个不同元素；stride 继续增大时，工作集缩小、缓存复用增强，并受 cache set 与 memory partition 映射影响，因而出现非单调波动。表中数值按逻辑读写量计算，不等同于实际 DRAM 流量。
 
 \prob{4.8}{EXPERIMENT}[cuda/m4\_memory/06\_occupancy.cu]
 \texttt{06\_occupancy.cu}，详细内容见相关文件。实验命令如下：
