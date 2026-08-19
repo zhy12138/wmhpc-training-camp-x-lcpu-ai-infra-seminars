@@ -727,6 +727,8 @@ uv run pytest tests/test_fused_op.py
 
 改完回答——与 Module 2 里改 CUDA kernel 相比，这次的改动主要集中在 kernel 的什么部分？主体代码为什么一行都不用动？
 
+\par\textbf{回答：}改动集中在 kernel 参数和逐元素计算表达式。新旧操作的数据形状相同，因此数据分块、索引、边界 mask 和 load/store 逻辑都可复用。
+
 \prob{7.3}{FILL-IN}[kernels/tilelang\_scale\_add.py]
 请填空：\texttt{kernels/tilelang\_scale\_add.py} ，具体要求见代码注释。测试命令：
 
